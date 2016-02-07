@@ -23,6 +23,8 @@ module.exports.respond = function(event, cb) {
     return youtube_client;
   })();
   
+  var slack_client = require('../../lib/slack.js');
+  
   var search_youtube_video_id = function(keyword, callback){
     youtube_client.search(keyword, 1, function(error, result){
       if (error) { throw new Error(error); return; }
@@ -97,12 +99,13 @@ module.exports.respond = function(event, cb) {
   .then(function(json){
     s3_client.putObject(build_s3_param(json), function(error, data){
       if (error) { throw new Error(error); return; }
-      cb(null, 'finish success!!');
+      slack_client.post('update ranking json success!!');
+      cb(null, 'update ranking json success!!');
     });
   })
   .catch(function(error) {
-    // TODO: notify to slack
     console.error(error);
-    cb(null, 'finish with error: ' + JSON.stringify(error));
+    slack_client.post('update ranking json finish with error: ' + JSON.stringify(error));
+    cb(null, 'update ranking json finish with error: ' + JSON.stringify(error));
   });
 };
