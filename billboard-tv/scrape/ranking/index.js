@@ -9,9 +9,9 @@ module.exports.respond = function(event, cb) {
   var s3_client = (function(){
     var AWS = require('aws-sdk');
     AWS.config.update({
-      'accessKeyId': process.env.AWS_ACCESS_KEY_ID,
-      'secretAccessKey': process.env.AWS_SECRET_ACCESS_KEY,
-      'region': process.env.AWS_REGION
+      'accessKeyId': process.env.BILLBOARD_TV_AWS_ACCESS_KEY_ID,
+      'secretAccessKey': process.env.BILLBOARD_TV_AWS_SECRET_ACCESS_KEY,
+      'region': process.env.BILLBOARD_TV_AWS_REGION
     });
     return new AWS.S3();
   })();
