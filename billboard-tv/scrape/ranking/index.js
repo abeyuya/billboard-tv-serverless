@@ -3,6 +3,8 @@
  */
 
 module.exports.respond = function(event, cb) {
+  
+  var Promise = require("bluebird");
 
   var s3_client = (function(){
     var AWS = require('aws-sdk');

@@ -13,6 +13,7 @@
   "devDependencies": {},
   "dependencies": {
     "aws-sdk": "^2.2.33",
+    "bluebird": "^3.2.2",
     "cheerio-httpcli": "^0.6.3",
     "serverless-helpers-js": "~0.0.3",
     "slack-node": "^0.1.7",
