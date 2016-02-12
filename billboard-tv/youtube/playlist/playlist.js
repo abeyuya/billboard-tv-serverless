@@ -19,7 +19,17 @@ module.exports.respond = function(event, cb) {
     return oauth2Client;
   })();
   
+  var oauth = new Promise(function(resolve, reject){
+    console.log('oauth');
+    oauth2Client.refreshAccessToken(function(error, tokesn){
+      oauth2Client.setCredentials(tokesn);
+      if (error) { throw new Error(error); return; }
+      resolve();
+    });
+  });
+  
   var fetch_ranking_json = new Promise(function(resolve, reject){
+    console.log('fetch_ranking_json');
     var http_client = require('superagent');
     http_client.get('http://billboard-tv.tk/ranking.json')
     .end(function(error, res){
@@ -31,34 +41,45 @@ module.exports.respond = function(event, cb) {
   var ranking_json = {};
   var playlist_title = '';
   
-  fetch_ranking_json.then(function(ranking_json_res){
+  oauth.then(function(){
+    return fetch_ranking_json;
+  }).then(function(ranking_json_res){
+    console.log('get playlist');
     return new Promise(function(resolve, reject){
       ranking_json = ranking_json_res;
       playlist_title = 'Billboard Chart Hot 100 - ' + ranking_json['date'];
       
-      var request = youtube_client.playlists.list({
+      youtube_client.playlists.list({
         auth: oauth2Client,
         part: 'snippet',
         channelId: 'UCm8HacZNgIMAv2zg3OxexGQ',
-        maxResults: 50,
+        maxResults: 50, // TODO: pagenation loop
         fields: 'items(id,snippet)'
       }, function(error, playlists_res){
         if (error) { console.log('youtube playlist request error: ' + JSON.stringify(error)); return; }
+        if (playlists_res['items'].length === 0) { resolve(); return; }
+        
+        var loop_count = 0;
         playlists_res['items'].forEach(function(obj, i, arr){
-          if (obj['title'] === playlist_title) {
+          loop_count += 1;
+          if (obj['snippet']['title'] === playlist_title) {
             // finish
-            cb(null, 'Nothing todo. Playlist has already created.');
-            return;
+            // cb(null, 'Nothing todo. Playlist has already created.');
+            // return true;
+            resolve(obj['id']);
           }
-          if (arr.length === i + 1) {
-            resolve(playlists_res);
+          if (arr.length === loop_count) {
+            resolve();
           }
         });
       });
     });
   })
-  .then(function(playlists_res){
+  .then(function(debug_playlist_id){
+    console.log('create playlist');
     return new Promise(function(resolve, reject){
+      if (debug_playlist_id) { resolve(debug_playlist_id); return; }
+      
       youtube_client.playlists.insert({
         auth: oauth2Client,
         part: 'snippet, status',
@@ -73,12 +94,43 @@ module.exports.respond = function(event, cb) {
         }
       }, function(error, res){
         if (error) { console.log('playlist insert error: ' + JSON.stringify(error)); return; }
-        resolve(res);
+        resolve(res['id']);
       });
     });
   })
-  .then(function(res){
-    console.log('res: ' + JSON.stringify(res));
+  .then(function(playlist_id){
+    console.log('insert playlist items');
+    return new Promise(function(resolve, reject){
+      var loop_count = 0;
+      ranking_json['ranking'].forEach(function(obj, i, arr){
+      // for (var i=0; i<=ranking_json['ranking'].length; i++) {
+        youtube_client.playlistItems.insert({
+          auth: oauth2Client,
+          part: 'snippet',
+          resource: {
+            snippet: {
+              playlistId: playlist_id,
+              resourceId: {
+                videoId: obj['video_id'],
+                // videoId: ranking_json['ranking'][i]['video_id'],
+                kind: 'youtube#video'
+              }
+            }
+          }
+        }, function(error, res){
+          loop_count += 1;
+          if (error) { console.log('playlistItem insert error: ' + JSON.stringify(error)); return; }
+          console.log('loop_count: ' + loop_count + ', title: ' + res['snippet']['title']);
+          
+          if (ranking_json['ranking'].length === loop_count) {
+            resolve();
+          }
+        });
+      });
+    });
+  })
+  .then(function(){
+    console.log('finish');
     cb(null, 'create playlist');
   });
   
