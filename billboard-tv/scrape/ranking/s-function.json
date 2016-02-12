@@ -32,5 +32,14 @@
         }
       }
     }
+  ],
+  "events": [
+    {
+      "name" : "weekly-scraping-ranking",
+      "type": "schedule",
+      "config": {
+        "schedule": "cron(0 0 ? * SAT *)"
+      }
+    }
   ]
 }
