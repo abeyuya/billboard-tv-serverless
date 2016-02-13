@@ -75,7 +75,7 @@ module.exports.respond = function(event, cb) {
     console.log('get playlist');
     return new Promise(function(resolve, reject){
       ranking_json = ranking_json_res;
-      playlist_title = 'Billboard Chart Hot 100 - ' + ranking_json['date'];
+      playlist_title = 'Billboard Hot 100 Music Videos - ' + ranking_json['date'];
       
       youtube_client.playlists.list({
         auth: oauth2Client,
@@ -91,10 +91,8 @@ module.exports.respond = function(event, cb) {
         playlists_res['items'].forEach(function(obj, i, arr){
           loop_count += 1;
           if (obj['snippet']['title'] === playlist_title) {
-            // finish
             cb(null, 'Nothing todo. Playlist has already created.');
             return true;
-            // resolve(obj['id']);
           }
           if (arr.length === loop_count) {
             resolve();
@@ -114,14 +112,18 @@ module.exports.respond = function(event, cb) {
         resource: {
           snippet: {
             title: playlist_title,
-            description: 'description here',
+            description: "Do you want to play without stop by video ads? Visit here. http://billboard-tv.tk \nIf there is a deleted videos in this playlist, it may not be enough to 100 songs.\n#Billboard"
           },
           status: {
             privacyStatus: 'public'
           }
         }
       }, function(error, res){
-        if (error) { console.log('playlist insert error: ' + JSON.stringify(error)); return; }
+        if (error) {
+          console.log('playlist insert error: ' + JSON.stringify(error));
+          throw new Error(error);
+          return;
+        }
         resolve(res['id']);
       });
     });
@@ -135,7 +137,13 @@ module.exports.respond = function(event, cb) {
     });
   })
   .then(function(){
-    console.log('all finish');
-    cb(null, 'all finish');
+    console.log('finish all');
+    slack_client.post('create new playlist success!!');
+    cb(null, 'finish all');
+  })
+  .catch(function(error){
+    console.error(error);
+    slack_client.post('create new playlist finish with error: ' + JSON.stringify(error));
+    cb(null, 'create new playlist finish with error: ' + JSON.stringify(error));
   });
 };
