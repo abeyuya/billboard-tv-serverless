@@ -35,7 +35,7 @@
   ],
   "events": [
     {
-      "name" : "weekly-scraping-ranking",
+      "name" : "weekly",
       "type": "schedule",
       "config": {
         "schedule": "cron(0 0 ? * SAT *)"

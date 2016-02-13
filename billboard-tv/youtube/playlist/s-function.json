@@ -3,7 +3,7 @@
   "customName": false,
   "customRole": false,
   "handler": "youtube/playlist/handler.handler",
-  "timeout": 6,
+  "timeout": 300,
   "memorySize": 1024,
   "custom": {
     "excludePatterns": [],
@@ -35,5 +35,13 @@
       }
     }
   ],
-  "events": []
+  "events": [
+    {
+      "name" : "weekly",
+      "type": "schedule",
+      "config": {
+        "schedule": "cron(0 1 ? * SAT *)"
+      }
+    }
+  ]
 }
