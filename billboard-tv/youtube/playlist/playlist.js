@@ -38,6 +38,34 @@ module.exports.respond = function(event, cb) {
     });
   });
   
+  var insert_playlist_item = function(playlist_id, loop_count, callback){
+    youtube_client.playlistItems.insert({
+      auth: oauth2Client,
+      part: 'snippet',
+      resource: {
+        snippet: {
+          playlistId: playlist_id,
+          resourceId: {
+            videoId: ranking_json['ranking'][loop_count]['video_id'],
+            kind: 'youtube#video'
+          }
+        }
+      }
+    }, function(error, res){
+      if (error) {
+        console.log('playlistItem insert error: ' + JSON.stringify(error));
+      } else {
+        console.log('loop_count: ' + loop_count + ', title: ' + res['snippet']['title']);
+      }
+      
+      if (loop_count == 99) {
+        callback();
+      } else {
+        insert_playlist_item(playlist_id, loop_count+1, callback);
+      }
+    });
+  };
+  
   var ranking_json = {};
   var playlist_title = '';
   
@@ -64,9 +92,9 @@ module.exports.respond = function(event, cb) {
           loop_count += 1;
           if (obj['snippet']['title'] === playlist_title) {
             // finish
-            // cb(null, 'Nothing todo. Playlist has already created.');
-            // return true;
-            resolve(obj['id']);
+            cb(null, 'Nothing todo. Playlist has already created.');
+            return true;
+            // resolve(obj['id']);
           }
           if (arr.length === loop_count) {
             resolve();
@@ -101,37 +129,13 @@ module.exports.respond = function(event, cb) {
   .then(function(playlist_id){
     console.log('insert playlist items');
     return new Promise(function(resolve, reject){
-      var loop_count = 0;
-      ranking_json['ranking'].forEach(function(obj, i, arr){
-      // for (var i=0; i<=ranking_json['ranking'].length; i++) {
-        youtube_client.playlistItems.insert({
-          auth: oauth2Client,
-          part: 'snippet',
-          resource: {
-            snippet: {
-              playlistId: playlist_id,
-              resourceId: {
-                videoId: obj['video_id'],
-                // videoId: ranking_json['ranking'][i]['video_id'],
-                kind: 'youtube#video'
-              }
-            }
-          }
-        }, function(error, res){
-          loop_count += 1;
-          if (error) { console.log('playlistItem insert error: ' + JSON.stringify(error)); return; }
-          console.log('loop_count: ' + loop_count + ', title: ' + res['snippet']['title']);
-          
-          if (ranking_json['ranking'].length === loop_count) {
-            resolve();
-          }
-        });
+      insert_playlist_item(playlist_id, 0, function(){
+        resolve();
       });
     });
   })
   .then(function(){
-    console.log('finish');
-    cb(null, 'create playlist');
+    console.log('all finish');
+    cb(null, 'all finish');
   });
-  
 };
